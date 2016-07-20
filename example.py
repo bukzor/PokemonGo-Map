@@ -51,7 +51,12 @@ SESSION = requests.session()
 SESSION.headers.update({'User-Agent': 'Niantic App'})
 SESSION.verify = False
 
-global_password = None
+try:
+    with open('password.txt') as password:
+        global_password = password.read().strip()
+except IOError:
+    global_password = None
+
 global_token = None
 access_token = None
 DEBUG = True
