@@ -797,9 +797,16 @@ def config():
 @app.route('/')
 def fullmap():
     clear_stale_pokemons()
-
+    if 'refresh' in flask.request.args:
+        auto_refresh_interval = int(flask.request.args['refresh']) * 1000
+    else:
+        auto_refresh_interval = auto_refresh
     return render_template(
-        'example_fullmap.html', key=GOOGLEMAPS_KEY, fullmap=get_map(), auto_refresh=auto_refresh)
+        'example_fullmap.html',
+        key=GOOGLEMAPS_KEY,
+        fullmap=get_map(),
+        auto_refresh=auto_refresh_interval,
+    )
 
 
 @app.route('/next_loc')
