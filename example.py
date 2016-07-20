@@ -4,7 +4,6 @@
 import flask
 from flask import Flask, render_template
 from flask_googlemaps import GoogleMaps
-from flask_googlemaps import Map
 from flask_googlemaps import icons
 import os
 import re
@@ -336,7 +335,7 @@ def login_ptc(username, password):
     head = {'User-Agent': 'Niantic App'}
     r = SESSION.get(LOGIN_URL, headers=head)
     if r is None:
-        return render_template('nope.html', fullmap=fullmap)
+        return render_template('nope.html')
 
     try:
         jdata = json.loads(r.content)
@@ -809,7 +808,6 @@ def fullmap():
     return render_template(
         'example_fullmap.html',
         key=GOOGLEMAPS_KEY,
-        fullmap=get_map(),
         auto_refresh=auto_refresh_interval,
     )
 
@@ -912,17 +910,6 @@ def get_pokemarkers():
                 'infobox': 'Pokestop',
             })
     return pokeMarkers
-
-
-def get_map():
-    fullmap = Map(
-        identifier="fullmap2",
-        style='height:100%;width:100%;top:0;left:0;position:absolute;z-index:200;',
-        lat=origin_lat,
-        lng=origin_lon,
-        markers=get_pokemarkers(),
-        zoom='15', )
-    return fullmap
 
 
 if __name__ == '__main__':
