@@ -1,5 +1,5 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
+import sqlite3
 
 import flask
 from flask import Flask, render_template
@@ -50,11 +50,11 @@ SESSION = requests.session()
 SESSION.headers.update({'User-Agent': 'Niantic App'})
 SESSION.verify = False
 
-try:
-    with open('password.txt') as password:
-        global_password = password.read().strip()
-except IOError:
-    global_password = None
+with open('config.json') as config:
+    config = json.load(config)
+    global_password = config['password']
+    global_username = config['username']
+    location = config['location']
 
 global_token = None
 access_token = None
@@ -443,10 +443,6 @@ def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '-a', '--auth_service', type=str.lower, help='Auth Service', default='ptc')
-    parser.add_argument('-u', '--username', help='Username', required=True)
-    parser.add_argument('-p', '--password', help='Password', required=False)
-    parser.add_argument(
-        '-l', '--location', type=parse_unicode, help='Location', required=True)
     parser.add_argument('-st', '--step-limit', help='Steps', required=True)
     group = parser.add_mutually_exclusive_group(required=False)
     group.add_argument(
@@ -455,7 +451,7 @@ def get_args():
         '-o', '--only', help='Comma-separated list of Pokémon names or IDs to search')
     parser.add_argument(
         "-ar",
-        "--auto_refresh",
+        "--auto-refresh",
         help="Enables an autorefresh that behaves the same as a page reload. " +
              "Needs an integer value for the amount of seconds")
     parser.add_argument(
@@ -522,7 +518,7 @@ def login(args):
       else:
         global_password = getpass.getpass()
 
-    access_token = get_token(args.auth_service, args.username, global_password)
+    access_token = get_token(args.auth_service, global_username, global_password)
     if access_token is None:
         raise Exception('[-] Wrong username/password')
 
@@ -577,9 +573,8 @@ def main():
         print '[!] DEBUG mode on'
 
     # only get location for first run
-    if not (FLOAT_LAT and FLOAT_LONG):
-      print('[+] Getting initial location')
-      retrying_set_location(args.location)
+    if not (origin_lat and origin_lon):
+        retrying_set_location(location)
 
     if args.auto_refresh:
         global auto_refresh
