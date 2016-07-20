@@ -112,8 +112,7 @@
             setMapOnAll(null, length);
         }
 
-        $.get(baseURL + "/config", function(response){
-                        var json_obj = $.parseJSON(response);//parse JSON
+        $.get(baseURL + "/config", function(json_obj) {
                         options["lat"] = json_obj["lat"];
                         options["lng"] = json_obj["lng"];
                         options["zoom"] = json_obj["zoom"];
@@ -143,8 +142,7 @@
             // A new map is created because the original one isn't saved
             createMap();
             // Requests the data and populates the map
-            $.get(baseURL + "/data", function(response){
-                var json_obj = $.parseJSON(response);
+            $.get(baseURL + "/data", function(json_obj) {
                 var now = new Date();
                 
                 for (var index in json_obj) {
