@@ -64,10 +64,10 @@ def f2i(float):
     return struct.unpack('<Q', struct.pack('<d', float))[0]
 
 
-def retrying_api_req(api_endpoint, access_token, *args, **kwargs):
+def retrying_api_req(*args, **kwargs):
     while True:
         try:
-            response = api_req(api_endpoint, access_token, *args, **kwargs)
+            response = api_req(*args, **kwargs)
             if response:
                 return response
             print('retrying_api_req: api_req returned None, retrying')
