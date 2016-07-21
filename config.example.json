@@ -9,5 +9,5 @@
     "port": 5000,
     "auto_refresh": 10,
     "zoom": 15,
-    "ignore": [16, "zubat"]
+    "ignore": ["zubat"]
 }
