@@ -58,9 +58,7 @@ def fullmap():
     else:
         auto_refresh_interval = auto_refresh
     return flask.render_template(
-        'example_fullmap.html',
-        key=GOOGLEMAPS_KEY,
-        auto_refresh=auto_refresh_interval,
+        'map.html', key=GOOGLEMAPS_KEY, auto_refresh=auto_refresh_interval,
     )
 
 
