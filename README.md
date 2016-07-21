@@ -10,10 +10,10 @@ Rough usage:
 
 - Set up `config.json`
     Usually:
-    - `cp config.example.json example.json`
+    - `cp config.example.json config.json`
     - `chmod 600 config.json`
     - `$EDITOR config.json`
-- `./venv.sh`
+- `make venv`
 - `. venv/bin/activate`
 - `pgctl-2015 start`
 
