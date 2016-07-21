@@ -313,15 +313,16 @@ def create_tables(db):
             '    pokemon INT NOT NULL,\n'
             '    lat FLOAT NOT NULL,\n'
             '    lng FLOAT NOT NULL,\n'
-            '    expires_at FLOAT NOT NULL,\n'
-            '    PRIMARY KEY (spawn_id)\n'
+            '    expires_at_ms INT NOT NULL,\n'
+            '    PRIMARY KEY (spawn_id, expires_at_ms)\n'
             ')'
         )
 
 
 def insert_data(db, data):
     db.executemany(
-        'INSERT OR REPLACE INTO data (spawn_id, pokemon, lat, lng, expires_at)\n'
+        'INSERT OR REPLACE INTO data\n'
+        '(spawn_id, pokemon, lat, lng, expires_at_ms)\n'
         'VALUES (?, ?, ?, ?, ?)',
         data,
     )
@@ -367,21 +368,18 @@ def main():
                 hs.append(get_heartbeat(api_endpoint, access_token, profile_response, child_lat, child_lng, child_lat_i, child_lng_i))
             visible = []
 
+            data = []
             for hh in hs:
                 for cell in hh.cells:
-                    visible.extend(cell.WildPokemon)
-
-            data = []
-            for poke in visible:
-                disappear_timestamp = time.time() + poke.TimeTillHiddenMs / 1000
-
-                data.append((
-                    poke.SpawnPointId,
-                    poke.pokemon.PokemonId,
-                    poke.Latitude,
-                    poke.Longitude,
-                    disappear_timestamp,
-                ))
+                    for poke in cell.WildPokemon:
+                        disappear_ms = cell.AsOfTimeMs + poke.TimeTillHiddenMs
+                        data.append((
+                            poke.SpawnPointId,
+                            poke.pokemon.PokemonId,
+                            poke.Latitude,
+                            poke.Longitude,
+                            disappear_ms,
+                        ))
             if data:
                 print('Upserting {} pokemon'.format(len(data)))
                 with sqlite3.connect('database.db') as db:

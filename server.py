@@ -80,11 +80,15 @@ LABEL_TEMPLATE = (
 
 
 class Pokemon(collections.namedtuple(
-        'Pokemon', ('spawn_id', 'number', 'lat', 'lng', 'expires_at'),
+        'Pokemon', ('spawn_id', 'number', 'lat', 'lng', 'expires_at_ms'),
 )):
     @property
     def name(self):
         return pokemon_names[self.number]
+
+    @property
+    def expires_at(self):
+        return self.expires_at_ms / 1000
 
     @property
     def expires_at_formatted(self):
@@ -105,7 +109,8 @@ class Pokemon(collections.namedtuple(
 def get_pokemarkers():
     with sqlite3.connect('database.db') as db:
         all_data = db.execute(
-            'SELECT * FROM data WHERE expires_at > ?', (time.time(),)
+            'SELECT * FROM data WHERE expires_at_ms > ?',
+            (time.time() * 1000,),
         ).fetchall()
         all_data = [Pokemon(*row) for row in all_data]
 
