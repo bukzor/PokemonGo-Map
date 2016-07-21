@@ -35,15 +35,6 @@ LOGIN_URL = \
 LOGIN_OAUTH = 'https://sso.pokemon.com/sso/oauth2.0/accessToken'
 APP = 'com.nianticlabs.pokemongo'
 
-with open('credentials.json') as file:
-	credentials = json.load(file)
-
-PTC_CLIENT_SECRET = credentials.get('ptc_client_secret', None)
-ANDROID_ID = credentials.get('android_id', None)
-SERVICE = credentials.get('service', None)
-CLIENT_SIG = credentials.get('client_sig', None)
-GOOGLEMAPS_KEY = credentials.get('gmaps_key', None)
-
 SESSION = requests.session()
 SESSION.headers.update({'User-Agent': 'Niantic App'})
 SESSION.verify = False
@@ -53,6 +44,7 @@ with open('config.json') as config:
     global_password = config['password']
     global_username = config['username']
     location = config['location']
+    GOOGLEMAPS_KEY = config['gmaps_key']
 
 global_token = None
 access_token = None

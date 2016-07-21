@@ -26,10 +26,7 @@ LOGIN_URL = \
     'https://sso.pokemon.com/sso/login?service=https://sso.pokemon.com/sso/oauth2.0/callbackAuthorize'
 LOGIN_OAUTH = 'https://sso.pokemon.com/sso/oauth2.0/accessToken'
 
-with open('credentials.json') as file:
-    credentials = json.load(file)
-
-PTC_CLIENT_SECRET = credentials.get('ptc_client_secret', None)
+PTC_CLIENT_SECRET = 'w8ScCUXJQc6kXKw8FiOhd8Fixzht18Dq3PEVkUCP5ZPxtgyWsbTvWHFLm2wNY0JR'
 
 SESSION = requests.session()
 SESSION.headers.update({'User-Agent': 'Niantic App'})
