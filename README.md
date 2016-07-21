@@ -1,4 +1,4 @@
-Upstream sucks, let's fork!
+Upstream's not accepting PRs, let's fork!
 
 Rough usage:
 
