@@ -13,8 +13,6 @@ from s2sphere import Cell
 from s2sphere import CellId
 from s2sphere import LatLng
 from datetime import datetime
-from geopy.geocoders import GoogleV3
-from geopy.exc import GeocoderTimedOut, GeocoderServiceError
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from requests.adapters import ConnectionError
 from requests.models import InvalidURL
@@ -36,7 +34,8 @@ with open('config.json') as config:
     config = json.load(config)
     global_password = config['password']
     global_username = config['username']
-    location = config['location']
+    origin_lat = config['latitude']
+    origin_lng = config['longitude']
     steplimit = config['steplimit']
 
 
@@ -63,36 +62,6 @@ def get_neighbors(lat, lng):
 
 def f2i(float):
     return struct.unpack('<Q', struct.pack('<d', float))[0]
-
-
-def get_location(location_name):
-    geolocator = GoogleV3()
-    prog = re.compile('^(\-?\d+(\.\d+)?),\s*(\-?\d+(\.\d+)?)$')
-    if prog.match(location_name):
-        local_lat, local_lng = [float(x) for x in location_name.split(",")]
-        alt = 0
-    else:
-        loc = geolocator.geocode(location_name)
-        local_lat, local_lng = loc.latitude, loc.longitude
-        alt = loc.altitude
-        print '[!] Your given location: {}'.format(loc.address.encode('utf-8'))
-
-    print('[!] lat/lng/alt: {} {} {}'.format(local_lat, local_lng, alt))
-    return local_lat, local_lng, alt
-
-
-def retrying_get_location(location_name):
-    """
-    Continue trying to get co-ords from Google Location until we have them
-    :param location_name: string to pass to Location API
-    :return: None
-    """
-    while True:
-        try:
-            return get_location(location_name)
-        except (GeocoderTimedOut, GeocoderServiceError) as e:
-            print('Retrying geocoder {!r}'.format(e))
-        time.sleep(1.25)
 
 
 def retrying_api_req(api_endpoint, access_token, *args, **kwargs):
@@ -359,7 +328,6 @@ def insert_data(db, data):
 
 
 def main():
-    origin_lat, origin_lng, alt = retrying_get_location(location)
     origin_lat_i, origin_lng_i = f2i(origin_lat), f2i(origin_lng)
     api_endpoint, access_token, profile_response = login(origin_lat_i, origin_lng_i)
 
@@ -374,7 +342,7 @@ def main():
         dy = -1
         steplimit2 = steplimit**2
         for step in range(steplimit2):
-            print('looping: step {} of {}'.format(step + 1, steplimit**2))
+            #print('looping: step {} of {}'.format(step + 1, steplimit**2))
             # Scan location math
             if -steplimit2 / 2 < x <= steplimit2 / 2 and -steplimit2 / 2 < y <= steplimit2 / 2:
                 step_lat = x * 0.0025 + origin_lat
@@ -386,7 +354,7 @@ def main():
 
             (x, y) = (x + dx, y + dy)
 
-            print('[+] Searching for Pokemon at location {} {}'.format(step_lat, step_lng))
+            #print('[+] Searching for Pokemon at location {} {}'.format(step_lat, step_lng))
             origin = LatLng.from_degrees(step_lat, step_lng)
             parent = CellId.from_lat_lng(origin).parent(15)
             h = get_heartbeat(api_endpoint, access_token, profile_response, step_lat, step_lng, step_lat_i, step_lng_i)
@@ -400,12 +368,8 @@ def main():
             visible = []
 
             for hh in hs:
-                try:
-                    for cell in hh.cells:
-                        visible.extend(cell.WildPokemon)
-                except AttributeError:
-                    print('AttributeError?')
-                    break
+                for cell in hh.cells:
+                    visible.extend(cell.WildPokemon)
 
             data = []
             for poke in visible:
@@ -423,8 +387,8 @@ def main():
                 with sqlite3.connect('database.db') as db:
                     insert_data(db, data)
 
-            print('Completed: ' + str(
-                ((step+1) + pos * .25 - .25) / (steplimit2) * 100) + '%')
+            #print('Completed: ' + str(
+            #    ((step+1) + pos * .25 - .25) / (steplimit2) * 100) + '%')
 
 
 if __name__ == '__main__':

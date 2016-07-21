@@ -98,30 +98,20 @@
             setMapOnAll(null, length);
         }
 
-        $.get(baseURL + "/config", function(json_obj) {
-            options["lat"] = json_obj["lat"];
-            options["lng"] = json_obj["lng"];
-            options["zoom"] = json_obj["zoom"];
-            options["identifier"] = json_obj["identifier"];
-            updateMap();
-        });
-
         function createMap() {
             if (map == null) {
-                if (options.identifier != null) {
-                    map = new google.maps.Map(
-                        document.getElementById(options["identifier"]), {
-                            center: new google.maps.LatLng(options["lat"], options["lng"]),
-                            zoom: options["zoom"],
-                            mapTypeId: google.maps.MapTypeId.ROADMAP,
-                            zoomControl: true,
-                            mapTypeControl: true,
-                            scaleControl: true,
-                            streetViewControl: true,
-                            rotateControl: true,
-                            fullscreenControl: true
-                    });
-                }
+                map = new google.maps.Map(
+                    document.getElementById(options["identifier"]), {
+                        center: new google.maps.LatLng(options["lat"], options["lng"]),
+                        zoom: options["zoom"],
+                        mapTypeId: google.maps.MapTypeId.ROADMAP,
+                        zoomControl: true,
+                        mapTypeControl: true,
+                        scaleControl: true,
+                        streetViewControl: true,
+                        rotateControl: true,
+                        fullscreenControl: true
+                });
             }
         }
         function updateMap() {
@@ -168,7 +158,7 @@
                             }
                         }
                     } else {
-                        disappearsAt = {{ auto_refresh }} + 500;
+                        disappearsAt = {{ auto_refresh }} * 1000 + 500;
                     }
                     var marker = addMarker({
                             position: new google.maps.LatLng(item["lat"], item["lng"]),
@@ -207,10 +197,16 @@
         }
 
         function initMap() {
-            updateMap();
-            {% if auto_refresh %}
-            window.setInterval(updateMap, {{ auto_refresh }});
-            {% endif %}
+            $.get(baseURL + '/config', function(json_obj) {
+                options.lat = json_obj.lat;
+                options.lng = json_obj.lng;
+                options.zoom = json_obj.zoom;
+                options.identifier = json_obj.identifier;
+                updateMap();
+                {% if auto_refresh %}
+                window.setInterval(updateMap, {{ auto_refresh * 1000 }});
+                {% endif %}
+            });
         }
     </script>
     <script src="https://maps.googleapis.com/maps/api/js?key={{ key }}&amp;callback=initMap"></script>

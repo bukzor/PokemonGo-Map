@@ -1,7 +1,13 @@
 {
     "username": "username here",
     "password": "password here",
-    "location": "location here",
+    "latitude": 37.5678222,
+    "longitude": -122.3259203,
     "steplimit": 5,
-    "gmaps_key": "...."
+    "gmaps_key": "....",
+    "host": "0.0.0.0",
+    "port": 5000,
+    "auto_refresh": 10,
+    "zoom": 15,
+    "ignore": [16, "zubat"]
 }
