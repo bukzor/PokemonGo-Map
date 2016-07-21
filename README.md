@@ -1,5 +1,11 @@
 Upstream's not accepting PRs, let's fork!
 
+Things you'll need beforehand:
+- A pokemon.com account (I'd suggest making an account separate from the one
+  you play on since this probably violates the TOS).
+- A google maps api key.  You can create one [here] [2].
+- A lat / lng of your location. You can use the [google geocoder] [1].
+
 Rough usage:
 
 - Set up `config.json`
@@ -10,3 +16,7 @@ Rough usage:
 - `./venv.sh`
 - `. venv/bin/activate`
 - `pgctl-2015 start`
+
+
+[1]: https://developers.google.com/maps/documentation/geocoding/intro
+[2]: https://console.developers.google.com/flows/enableapi?apiid=maps_backend,geocoding_backend,directions_backend,distance_matrix_backend,elevation_backend,places_backend&keyType=CLIENT_SIDE&reusekey=true
