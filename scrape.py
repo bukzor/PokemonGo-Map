@@ -338,7 +338,7 @@ M_PER_DEG = 111111.
 
 def generate_location_steps(initial_location, num_steps):
     lat, lng = initial_location
-    x, y, m = 0., 0., 173.2
+    x, y, m = 0., 0., 150
     # Conversion of radius from meters to deg
     r = (
         m / M_PER_DEG,
