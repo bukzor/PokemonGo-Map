@@ -98,6 +98,7 @@ class Pokemon(collections.namedtuple(
         return {
             'type': 'pokemon',
             'key': self.spawn_id,
+            'pokemon': self.number,
             'disappear_time': self.expires_at,
             'icon': 'static/icons/{}.png'.format(self.number),
             'lat': self.lat,
