@@ -7,7 +7,7 @@ message RequestEnvelop {
   optional fixed64 longitude = 8;
   optional fixed64 altitude = 9;
   optional AuthInfo auth = 10;
-  optional UnknownAuth unknown11 = 11;
+  optional AuthTicket unknown11 = 11;
   optional int64 unknown12 = 12;
 
   message Requests {
@@ -67,18 +67,18 @@ message RequestEnvelop {
 }
 
 
-message UnknownAuth {
+message AuthTicket {
   optional bytes unknown71 = 1;
   optional int64 unknown72 = 2;
   optional bytes unknown73 = 3;
 }
 
 message ResponseEnvelop {
-  required int32 unknown1 = 1;
-  optional int64 unknown2 = 2;
+  required int32 status_code = 1;
+  optional int64 request_id = 2;
   optional string api_url = 3;
   optional Unknown6 unknown6 = 6;
-  optional UnknownAuth unknown7 = 7;
+  optional AuthTicket auth_ticket = 7;
   repeated bytes payload = 100;
 
   message Unknown6 {
