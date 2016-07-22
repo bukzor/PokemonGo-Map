@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import sqlite3
 
+import math
 import re
 import struct
 import json
@@ -9,7 +10,6 @@ import pokemon_pb2
 import time
 from google.protobuf.internal import encoder
 from google.protobuf.message import DecodeError
-from s2sphere import Cell
 from s2sphere import CellId
 from s2sphere import LatLng
 from datetime import datetime
@@ -328,6 +328,50 @@ def insert_data(db, data):
     )
 
 
+def hex_transform(x, y, r, initial_location):
+    lat, lng = initial_location
+    return (x + y / 2) * r[0] + lat, (0.886 * y) * r[1] + lng
+
+
+M_PER_DEG = 111111.
+
+
+def generate_location_steps(initial_location, num_steps):
+    lat, lng = initial_location
+    x, y, m = 0., 0., 150
+    # Conversion of radius from meters to deg
+    r = (
+        m / M_PER_DEG,
+        m / M_PER_DEG / math.cos(lat * 0.0174533)
+    )
+    yield hex_transform(x, y, r, initial_location)
+    for n in range(1, num_steps):
+        n += 1
+        for i in range(1, n):
+            x += 1
+            yield hex_transform(x, y, r, initial_location)
+        for i in range(1, n - 1):
+            y += 1
+            yield hex_transform(x, y, r, initial_location)
+        for i in range(1, n):
+            x -= 1
+            y += 1
+            yield hex_transform(x, y, r, initial_location)
+        for i in range(1, n):
+            x -= 1
+            yield hex_transform(x, y, r, initial_location)
+        for i in range(1, n):
+            y -= 1
+            yield hex_transform(x, y, r, initial_location)
+        for i in range(1, n):
+            x += 1
+            y -= 1
+            yield hex_transform(x, y, r, initial_location)
+    for i in range(1, num_steps):
+        x += 1
+        yield hex_transform(x, y, r, initial_location)
+
+
 def main():
     origin_lat_i, origin_lng_i = f2i(origin_lat), f2i(origin_lng)
     api_endpoint, access_token, profile_response = login(origin_lat_i, origin_lng_i)
@@ -336,50 +380,24 @@ def main():
         create_tables(db)
 
     while True:
-        pos = 1
-        x = 0
-        y = 0
-        dx = 0
-        dy = -1
-        steplimit2 = steplimit**2
-        for step in range(steplimit2):
-            #print('looping: step {} of {}'.format(step + 1, steplimit**2))
-            # Scan location math
-            if -steplimit2 / 2 < x <= steplimit2 / 2 and -steplimit2 / 2 < y <= steplimit2 / 2:
-                step_lat = x * 0.0025 + origin_lat
-                step_lng = y * 0.0025 + origin_lng
-                step_lat_i = f2i(step_lat)
-                step_lng_i = f2i(step_lng)
-            if x == y or x < 0 and x == -y or x > 0 and x == 1 - y:
-                (dx, dy) = (-dy, dx)
-
-            (x, y) = (x + dx, y + dy)
+        for step_lat, step_lng in generate_location_steps(
+            (origin_lat, origin_lng), steplimit,
+        ):
+            step_lat_i, step_lng_i = f2i(step_lat), f2i(step_lng)
 
             #print('[+] Searching for Pokemon at location {} {}'.format(step_lat, step_lng))
-            origin = LatLng.from_degrees(step_lat, step_lng)
-            parent = CellId.from_lat_lng(origin).parent(15)
-            h = get_heartbeat(api_endpoint, access_token, profile_response, step_lat, step_lng, step_lat_i, step_lng_i)
-            hs = [h]
-
-            for child in parent.children():
-                latlng = LatLng.from_point(Cell(child).get_center())
-                child_lat, child_lng = latlng.lat().degrees, latlng.lng().degrees
-                child_lat_i, child_lng_i = f2i(child_lat), f2i(child_lng)
-                hs.append(get_heartbeat(api_endpoint, access_token, profile_response, child_lat, child_lng, child_lat_i, child_lng_i))
-            visible = []
-
+            hh = get_heartbeat(api_endpoint, access_token, profile_response, step_lat, step_lng, step_lat_i, step_lng_i)
             data = []
-            for hh in hs:
-                for cell in hh.cells:
-                    for poke in cell.WildPokemon:
-                        disappear_ms = cell.AsOfTimeMs + poke.TimeTillHiddenMs
-                        data.append((
-                            poke.SpawnPointId,
-                            poke.pokemon.PokemonId,
-                            poke.Latitude,
-                            poke.Longitude,
-                            disappear_ms,
-                        ))
+            for cell in hh.cells:
+                for poke in cell.WildPokemon:
+                    disappear_ms = cell.AsOfTimeMs + poke.TimeTillHiddenMs
+                    data.append((
+                        poke.SpawnPointId,
+                        poke.pokemon.PokemonId,
+                        poke.Latitude,
+                        poke.Longitude,
+                        disappear_ms,
+                    ))
             if data:
                 print('Upserting {} pokemon'.format(len(data)))
                 with sqlite3.connect('database.db') as db:
