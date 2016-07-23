@@ -26,10 +26,6 @@ LOGIN_OAUTH = 'https://sso.pokemon.com/sso/oauth2.0/accessToken'
 
 PTC_CLIENT_SECRET = 'w8ScCUXJQc6kXKw8FiOhd8Fixzht18Dq3PEVkUCP5ZPxtgyWsbTvWHFLm2wNY0JR'
 
-SESSION = requests.session()
-SESSION.headers.update({'User-Agent': 'Niantic App'})
-SESSION.verify = False
-
 with open('config.json') as config:
     config = json.load(config)
     global_password = config['password']
@@ -181,7 +177,10 @@ def login_ptc(username, password):
     try:
         jdata = json.loads(r.content)
     except ValueError:
-        print('login_ptc: could not decode JSON from {}'.format(r.content))
+        if '<h2>CAS is Unavailable</h2>' in r.content:
+            print('the login server is down.')
+        else:
+            print('login_ptc: could not decode JSON from {}'.format(r.content))
         return None
 
     # Maximum password length is 15 (sign in page enforces this limit, API does not)
@@ -261,26 +260,28 @@ def get_heartbeat(api_endpoint, access_token, response, lat, lng, lat_i, lng_i):
     return heartbeat
 
 
-def get_token(username, password):
-    return login_ptc(username, password)
-
-
 def login(lat_i, lng_i):
-    access_token = get_token(global_username, global_password)
-    if access_token is None:
-        raise Exception('[-] Wrong username/password')
+    while True:
+        access_token = login_ptc(global_username, global_password)
+        if access_token is None:
+            print('[-] Login failed, retrying')
+            time.sleep(1)
+            continue
 
-    print '[+] RPC Session Token: {} ...'.format(access_token[:25])
+        print '[+] RPC Session Token: {} ...'.format(access_token[:25])
 
-    api_endpoint = get_api_endpoint(access_token, lat_i, lng_i)
-    if api_endpoint is None:
-        raise Exception('[-] RPC server offline')
+        api_endpoint = get_api_endpoint(access_token, lat_i, lng_i)
+        if api_endpoint is None:
+            print('[-] RPC server offline, retrying')
+            continue
 
-    print '[+] Received API endpoint: {}'.format(api_endpoint)
+        print '[+] Received API endpoint: {}'.format(api_endpoint)
 
-    profile_response = retrying_get_profile(access_token, api_endpoint, None, lat_i, lng_i)
-    if profile_response is None or not profile_response.payload:
-        raise Exception('Could not get profile')
+        profile_response = retrying_get_profile(access_token, api_endpoint, None, lat_i, lng_i)
+        if profile_response is None or not profile_response.payload:
+            raise Exception('Could not get profile')
+
+        break
 
     print '[+] Login successful'
 
@@ -372,13 +373,15 @@ def generate_location_steps(initial_location, num_steps):
         yield hex_transform(x, y, r, initial_location)
 
 
-def main():
+def scrape():
     origin_lat_i, origin_lng_i = f2i(origin_lat), f2i(origin_lng)
+
+    global SESSION
+    SESSION = requests.session()
+    SESSION.headers.update({'User-Agent': 'Niantic App'})
+    SESSION.verify = False
+
     api_endpoint, access_token, profile_response = login(origin_lat_i, origin_lng_i)
-
-    with sqlite3.connect('database.db') as db:
-        create_tables(db)
-
     while True:
         for step_lat, step_lng in generate_location_steps(
             (origin_lat, origin_lng), steplimit,
@@ -387,6 +390,10 @@ def main():
 
             #print('[+] Searching for Pokemon at location {} {}'.format(step_lat, step_lng))
             hh = get_heartbeat(api_endpoint, access_token, profile_response, step_lat, step_lng, step_lat_i, step_lng_i)
+            if hh is None:
+               print("Heartbeat didn't return!")
+               return
+
             data = []
             for cell in hh.cells:
                 for poke in cell.WildPokemon:
@@ -403,8 +410,14 @@ def main():
                 with sqlite3.connect('database.db') as db:
                     insert_data(db, data)
 
-            #print('Completed: ' + str(
-            #    ((step+1) + pos * .25 - .25) / (steplimit2) * 100) + '%')
+
+def main():
+    with sqlite3.connect('database.db') as db:
+        create_tables(db)
+
+    while True:
+        scrape()
+        print('restarting...')
 
 
 if __name__ == '__main__':
